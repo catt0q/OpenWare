@@ -11,7 +11,7 @@ import net.minecraft.resources.Identifier;
 public class ParallaxBackground {
 
     private static final Identifier WHATSAPP_CAMEL = Identifier.fromNamespaceAndPath("quantum",
-            "textures/gui/menu_background2.png");
+            "textures/gui/pizdec.png");
     private static final float WHATSAPP_CAMEL_ASPECT = 628.0f / 403.0f;
 
     private static final Identifier EPSTEIN_ISLAND = Identifier.fromNamespaceAndPath("quantum",
