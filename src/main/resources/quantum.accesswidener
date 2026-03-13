@@ -1,0 +1,73 @@
+accessWidener	v1	named
+
+accessible method net/minecraft/client/multiplayer/ClientLevel getBlockStatePredictionHandler ()Lnet/minecraft/client/multiplayer/prediction/BlockStatePredictionHandler;
+accessible method net/minecraft/client/Minecraft startAttack ()Z
+accessible method net/minecraft/world/entity/Entity getInputVector (Lnet/minecraft/world/phys/Vec3;FF)Lnet/minecraft/world/phys/Vec3;
+accessible field net/minecraft/network/protocol/game/ServerboundMovePlayerPacket x D
+accessible field net/minecraft/network/protocol/game/ServerboundMovePlayerPacket y D
+accessible field net/minecraft/network/protocol/game/ServerboundMovePlayerPacket z D
+accessible field net/minecraft/network/protocol/game/ServerboundMovePlayerPacket yRot F
+accessible field net/minecraft/network/protocol/game/ServerboundMovePlayerPacket xRot F
+accessible field net/minecraft/network/protocol/game/ServerboundMovePlayerPacket onGround Z
+accessible field net/minecraft/network/protocol/game/ServerboundMovePlayerPacket horizontalCollision Z
+accessible field net/minecraft/network/protocol/game/ServerboundMovePlayerPacket hasPos Z
+accessible field net/minecraft/network/protocol/game/ServerboundMovePlayerPacket hasRot Z
+accessible field net/minecraft/client/multiplayer/MultiPlayerGameMode destroyProgress F
+accessible field net/minecraft/client/multiplayer/MultiPlayerGameMode destroyTicks F
+accessible field net/minecraft/client/Minecraft rightClickDelay I
+accessible field net/minecraft/client/multiplayer/MultiPlayerGameMode destroyDelay I
+accessible field net/minecraft/world/entity/LivingEntity noJumpDelay I
+accessible field net/minecraft/world/entity/LivingEntity useItemRemaining I
+accessible class net/minecraft/network/protocol/game/ServerboundInteractPacket$ActionType
+accessible  class   net/minecraft/network/protocol/game/ServerboundInteractPacket$Action
+accessible field net/minecraft/network/protocol/game/ServerboundInteractPacket ATTACK_ACTION Lnet/minecraft/network/protocol/game/ServerboundInteractPacket$Action;
+accessible method net/minecraft/client/player/LocalPlayer modifyInput (Lnet/minecraft/world/phys/Vec2;)Lnet/minecraft/world/phys/Vec2;
+accessible method net/minecraft/client/player/LocalPlayer modifyInputSpeedForSquareMovement (Lnet/minecraft/world/phys/Vec2;)Lnet/minecraft/world/phys/Vec2;
+accessible method net/minecraft/client/player/KeyboardInput calculateImpulse (ZZ)F
+accessible method net/minecraft/client/multiplayer/MultiPlayerGameMode startPrediction (Lnet/minecraft/client/multiplayer/ClientLevel;Lnet/minecraft/client/multiplayer/prediction/PredictiveAction;)V
+accessible method net/minecraft/client/multiplayer/MultiPlayerGameMode performUseItemOn (Lnet/minecraft/client/player/LocalPlayer;Lnet/minecraft/world/InteractionHand;Lnet/minecraft/world/phys/BlockHitResult;)Lnet/minecraft/world/InteractionResult;
+accessible field net/minecraft/client/multiplayer/MultiPlayerGameMode destroyBlockPos Lnet/minecraft/core/BlockPos;
+accessible field net/minecraft/client/multiplayer/MultiPlayerGameMode destroyingItem Lnet/minecraft/world/item/ItemStack;
+accessible field net/minecraft/client/multiplayer/ClientLevel entityStorage Lnet/minecraft/world/level/entity/TransientEntitySectionManager;
+# removed in 1.21.11 - renderTextureOverlay uses Identifier now, not ResourceLocation
+# accessible method net/minecraft/client/gui/Gui renderTextureOverlay (Lnet/minecraft/client/gui/GuiGraphics;Lnet/minecraft/resources/ResourceLocation;F)V
+accessible method net/minecraft/client/gui/Gui renderTextureOverlay (Lnet/minecraft/client/gui/GuiGraphics;Lnet/minecraft/resources/Identifier;F)V
+# removed in 1.21.11 - swingArm method no longer exists
+# accessible method net/minecraft/client/renderer/ItemInHandRenderer swingArm (FFLcom/mojang/blaze3d/vertex/PoseStack;ILnet/minecraft/world/entity/HumanoidArm;)V
+accessible method net/minecraft/client/multiplayer/ClientPacketListener setValuesFromPositionPacket (Lnet/minecraft/world/entity/PositionMoveRotation;Ljava/util/Set;Lnet/minecraft/world/entity/Entity;Z)Z
+# removed in 1.21.11 - ResourceLocation constructor changed
+# accessible method net/minecraft/resources/ResourceLocation <init> (Ljava/lang/String;Ljava/lang/String;)V
+accessible field net/minecraft/client/renderer/LevelRenderer renderBuffers Lnet/minecraft/client/renderer/RenderBuffers;
+mutable field net/minecraft/client/renderer/LevelRenderer renderBuffers Lnet/minecraft/client/renderer/RenderBuffers;
+accessible   field   net/minecraft/network/chat/MutableComponent   contents   Lnet/minecraft/network/chat/ComponentContents;
+mutable      field   net/minecraft/network/chat/MutableComponent   contents   Lnet/minecraft/network/chat/ComponentContents;
+accessible   method   net/minecraft/network/protocol/game/ServerboundPlayerCommandPacket   <init>   (Lnet/minecraft/network/FriendlyByteBuf;)V
+accessible   field    net/minecraft/network/protocol/game/ServerboundPlayerCommandPacket   id      I
+
+accessible field net/minecraft/client/MouseHandler xpos D
+accessible field net/minecraft/client/MouseHandler ypos D
+accessible field net/minecraft/client/MouseHandler ignoreFirstMove Z
+accessible field net/minecraft/client/MouseHandler mouseGrabbed Z
+
+# 1.21.11 additions
+accessible method net/minecraft/client/renderer/fog/FogRenderer getFogType (Lnet/minecraft/client/Camera;)Lnet/minecraft/world/level/material/FogType;
+accessible method net/minecraft/client/renderer/LevelRenderer submitEntities (Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/state/LevelRenderState;Lnet/minecraft/client/renderer/SubmitNodeCollector;)V
+accessible method net/minecraft/client/renderer/LevelRenderer submitBlockEntities (Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/state/LevelRenderState;Lnet/minecraft/client/renderer/SubmitNodeStorage;)V
+accessible method net/minecraft/client/renderer/ItemInHandRenderer swingArm (FLcom/mojang/blaze3d/vertex/PoseStack;ILnet/minecraft/world/entity/HumanoidArm;)V
+accessible method net/minecraft/client/renderer/ItemInHandRenderer renderArmWithItem (Lnet/minecraft/client/player/AbstractClientPlayer;FFLnet/minecraft/world/InteractionHand;FLnet/minecraft/world/item/ItemStack;FLcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/SubmitNodeCollector;I)V
+accessible method net/minecraft/client/renderer/ItemInHandRenderer applyItemArmTransform (Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/world/entity/HumanoidArm;F)V
+accessible method net/minecraft/client/renderer/ItemInHandRenderer applyItemArmAttackTransform (Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/world/entity/HumanoidArm;F)V
+
+# Waypoint exploit support
+accessible field net/minecraft/client/multiplayer/ClientPacketListener waypointManager Lnet/minecraft/client/waypoints/ClientWaypointManager;
+accessible class net/minecraft/world/waypoints/TrackedWaypoint$Vec3iWaypoint
+accessible class net/minecraft/world/waypoints/TrackedWaypoint$ChunkWaypoint
+accessible class net/minecraft/world/waypoints/TrackedWaypoint$AzimuthWaypoint
+accessible class net/minecraft/world/waypoints/TrackedWaypoint$EmptyWaypoint
+accessible class net/minecraft/world/waypoints/TrackedWaypoint$Type
+accessible field net/minecraft/world/waypoints/TrackedWaypoint$Vec3iWaypoint vector Lnet/minecraft/core/Vec3i;
+accessible field net/minecraft/world/waypoints/TrackedWaypoint$ChunkWaypoint chunkPos Lnet/minecraft/world/level/ChunkPos;
+accessible field net/minecraft/world/waypoints/TrackedWaypoint$AzimuthWaypoint angle F
+
+# Font manager access for custom font support
+accessible field net/minecraft/client/Minecraft fontManager Lnet/minecraft/client/gui/font/FontManager;

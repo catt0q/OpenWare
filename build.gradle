@@ -1,0 +1,927 @@
+plugins {
+	id 'fabric-loom' version "${loom_version}"
+	id 'maven-publish'
+}
+
+// proguard dependency
+configurations {
+	proguard
+}
+
+dependencies {
+	proguard 'com.guardsquare:proguard-base:7.8.2'
+	proguard 'com.guardsquare:proguard-core:7.8.2'
+}
+
+version = project.mod_version
+group = project.maven_group
+
+base {
+	archivesName = project.archives_base_name
+}
+
+repositories {
+	maven {
+		url = "https://api.modrinth.com/maven"
+	}
+	// Add repositories to retrieve artifacts from in here.
+	// You should only use this when depending on other mods because
+	// Loom adds the essential maven repositories to download Minecraft and libraries from automatically.
+	// See https://docs.gradle.org/current/userguide/declaring_repositories.html
+	// for more information about repositories.
+}
+
+loom{
+	accessWidenerPath = file("src/main/resources/quantum.accesswidener")
+
+}
+
+fabricApi {
+	configureDataGeneration {
+		client = true
+	}
+}
+
+dependencies {
+	// To change the versions see the gradle.properties file
+	minecraft "com.mojang:minecraft:${project.minecraft_version}"
+	mappings loom.officialMojangMappings()
+	modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
+
+	// Fabric API. This is technically optional, but you probably want it anyway.
+	modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
+	compileOnly 'org.projectlombok:lombok:1.18.42'
+	annotationProcessor 'org.projectlombok:lombok:1.18.42'
+
+
+}
+
+processResources {
+	def modVersion = project.version
+	inputs.property "version", modVersion
+
+	filesMatching("fabric.mod.json") {
+		expand "version": modVersion
+	}
+}
+
+tasks.withType(JavaCompile).configureEach {
+	it.options.release = 21
+}
+
+java {
+	// Loom will automatically attach sourcesJar to a RemapSourcesJar task and to the "build" task
+	// if it is present.
+	// If you remove this line, sources will not be generated.
+	// withSourcesJar()
+
+	sourceCompatibility = JavaVersion.VERSION_21
+	targetCompatibility = JavaVersion.VERSION_21
+}
+
+jar {
+	def jarArchivesName = project.base.archivesName.get()
+	inputs.property "archivesName", jarArchivesName
+
+	from("LICENSE") {
+		rename { "${it}_${jarArchivesName}"}
+	}
+}
+
+// ---------- auth flag for conditional compilation ----------
+// auth is DISABLED by default (for dev/unobfuscated builds)
+// for release/obfuscated builds, use: ./gradlew build -Pauth=true
+def authEnabled = project.hasProperty('auth') ? project.property('auth').toString().toBoolean() : false
+
+// generate AuthConfig.java with compile-time flag
+tasks.register('generateAuthConfig') {
+	group = 'build'
+	description = 'generates AuthConfig.java with auth enabled/disabled flag'
+
+	def outputDir = layout.buildDirectory.dir('generated/sources/authconfig')
+	def authValue = authEnabled  // capture at configuration time
+
+	outputs.dir(outputDir)
+	inputs.property('authEnabled', authValue)
+
+	doLast {
+		def packageDir = new File(outputDir.get().asFile, 'base/client/auth')
+		packageDir.mkdirs()
+
+		def configFile = new File(packageDir, 'AuthConfig.java')
+		configFile.text = """package base.client.auth;
+
+/**
+ * auto-generated at compile time
+ * DO NOT EDIT - regenerated on each build
+ * 
+ * auth disabled by default (dev builds)
+ * use: ./gradlew build -Pauth=true for release
+ */
+public class AuthConfig {
+    public static final boolean AUTH_ENABLED = ${authValue};
+}
+"""
+		println "generated AuthConfig.java with AUTH_ENABLED=${authValue}"
+	}
+}
+
+// ---------- @obf-only preprocessor ----------
+// strips code between // @obf-only start and // @obf-only end when auth is disabled
+// this allows tamper checks to be completely removed from dev builds
+
+tasks.register('preprocessSources') {
+	group = 'build'
+	description = 'preprocesses sources to strip @obf-only blocks when auth is disabled'
+
+	def srcDir = file('src/main/java')
+	def outputDir = layout.buildDirectory.dir('preprocessed/java')
+	def authValue = authEnabled
+
+	inputs.dir(srcDir)
+	inputs.property('authEnabled', authValue)
+	outputs.dir(outputDir)
+
+	doLast {
+		def outDir = outputDir.get().asFile
+		outDir.deleteDir()
+		outDir.mkdirs()
+
+		def regex = ~/(?s)\/\/\s*@obf-only\s+start.*?\/\/\s*@obf-only\s+end\s*\n?/
+		def processedCount = 0
+		def strippedCount = 0
+
+		srcDir.eachFileRecurse { file ->
+			if (file.isFile() && file.name.endsWith('.java')) {
+				def relativePath = srcDir.toPath().relativize(file.toPath())
+				def outFile = new File(outDir, relativePath.toString())
+				outFile.parentFile.mkdirs()
+
+				def content = file.text
+
+				if (!authValue) {
+					// strip @obf-only blocks in dev builds
+					def newContent = content.replaceAll(regex, '')
+					if (newContent != content) {
+						strippedCount++
+					}
+					content = newContent
+				}
+
+				outFile.text = content
+				processedCount++
+			}
+		}
+
+		if (authValue) {
+			println "preprocessor: ${processedCount} files copied (auth enabled, @obf-only blocks kept)"
+		} else {
+			println "preprocessor: ${processedCount} files processed, ${strippedCount} files had @obf-only blocks stripped"
+		}
+	}
+}
+
+sourceSets {
+	main {
+		java {
+			srcDir 'src/main/java'
+			srcDir layout.buildDirectory.dir('generated/sources/authconfig')
+		}
+	}
+}
+
+
+
+// ensure preprocessing happens before compile
+def preprocessedDir = layout.buildDirectory.dir("preprocessed/java")
+def authGeneratedDir = layout.buildDirectory.dir("generated/sources/authconfig")
+
+tasks.named('compileJava', JavaCompile).configure {
+	dependsOn preprocessSources, generateAuthConfig
+
+	source = files(
+			fileTree(preprocessedDir),
+			fileTree(authGeneratedDir)
+	)
+}
+
+
+// sourcesJar also needs these
+// tasks.named('sourcesJar') {
+//	dependsOn preprocessSources, generateAuthConfig
+// }
+
+// ---------- obfuscation pipeline ----------
+
+// stage 0: generate junk code source files (before compilation)
+tasks.register('generateJunkCode', JavaExec) {
+	group = 'obfuscation'
+	description = 'generates fake java source files with dead code and impossible control flow'
+
+	// include buildSrc output and its dependencies
+	classpath = buildscript.configurations.classpath + files("$rootDir/buildSrc/build/classes/java/main")
+	mainClass = 'com.quantum.obfuscator.JunkCodeGenerator'
+
+	// generate to build directory, not source tree
+	def junkCodeDir = layout.buildDirectory.dir("generated/sources/junk")
+
+	args = [
+			junkCodeDir.get().asFile.absolutePath,  // output to build dir
+			'15',    // number of junk classes
+			'25',    // methods per class
+			'80'     // variables per method
+	]
+
+	outputs.dir(junkCodeDir)
+
+	doFirst {
+		def dir = junkCodeDir.get().asFile
+		// clean old junk code
+		if (dir.exists()) {
+			dir.deleteDir()
+		}
+		dir.mkdirs()
+		println "generating junk code to ${dir}..."
+	}
+
+	doLast {
+		println "junk code generation complete"
+	}
+}
+
+// junk code generation disabled - causes issues on CI
+// tasks.named('compileJava') {
+// 	dependsOn generateJunkCode
+// }
+
+// sourcesJar also needs the junk code
+// tasks.named('sourcesJar') {
+// 	dependsOn generateJunkCode
+// }
+
+// ---------- stage 0: SOURCE-LEVEL string encryption (WHITELIST approach) ----------
+// Only encrypts strings in feature/impl/** and cmd/impl/** (safe files)
+
+tasks.register('preprocessSourceForEncryption', JavaExec) {
+	group = 'obfuscation'
+	description = 'encrypts strings in Java source files BEFORE compilation'
+
+	def srcDir = file('src/main/java').absolutePath
+	def modifiedSrcDir = layout.buildDirectory.dir('modified-src/main/java').get().asFile.absolutePath
+
+	inputs.dir('src/main/java')
+	outputs.dir(modifiedSrcDir)
+
+	doFirst {
+		println "Preprocessing source for string encryption..."
+	}
+
+	classpath = buildscript.configurations.classpath + files("$rootDir/buildSrc/build/classes/java/main")
+	mainClass = 'com.quantum.obfuscator.SourceStringEncryptor'
+
+	args = [
+			srcDir,
+			modifiedSrcDir,
+			'true'  // verbose
+	]
+
+	doLast {
+		println "Source preprocessing complete!"
+	}
+}
+
+// Junk code source set disabled
+// sourceSets {
+// 	main {
+// 		java {
+// 			srcDir 'build/generated/sources/junk'
+// 		}
+// 	}
+// }
+
+// junk code generation disabled - causes issues on CI
+// tasks.named('compileJava') {
+// 	dependsOn generateJunkCode
+// }
+
+// ---------- stage 1: bytecode obfuscation (after compilation) ----------
+
+// stage 1: inject dead code into compiled classes (before remapping)
+tasks.register('injectDeadCode', JavaExec) {
+	group = 'obfuscation'
+	description = 'injects useless index fields and mutations into compiled bytecode'
+
+	dependsOn compileJava
+
+	// include buildSrc output and its dependencies (ASM)
+	classpath = buildscript.configurations.classpath + files("$rootDir/buildSrc/build/classes/java/main")
+	mainClass = 'com.quantum.obfuscator.DeadCodeInjector'
+
+	args = [
+			file('build/classes/java/main').absolutePath,  // input directory
+			'40',      // fields per class
+			'7',       // mutation density (every N instructions)
+			'true'     // verbose output
+	]
+
+	doFirst {
+		println "injecting dead code into compiled classes..."
+	}
+
+	doLast {
+		println "dead code injection complete"
+	}
+}
+// stage 1.5: number obfuscation MOVED to preProguardNumberObfuscation (JAR-based)
+/*
+tasks.register('obfuscateNumbers', JavaExec) {
+	group = 'obfuscation'
+	description = 'obfuscates integer constants with calculated values'
+
+	dependsOn injectDeadCode
+
+	classpath = buildscript.configurations.classpath + files("$rootDir/buildSrc/build/classes/java/main")
+	mainClass = 'com.quantum.obfuscator.NumberObfuscator'
+
+	args = [
+		file('build/classes/java/main').absolutePath,
+		'true'  // verbose
+	]
+
+	doLast {
+		println "number obfuscation complete"
+	}
+}
+*/
+// stage 1.6: string encryption (POST-remapJar - work on JAR file!)
+tasks.register('encryptStringsInJar', JavaExec) {
+	group ='obfuscation'
+	description = 'encrypts strings in the remapped JAR (before ProGuard)'
+
+	dependsOn remapJar
+
+	def jarPath = layout.buildDirectory.file("libs/quantum-${project.version}-unobfuscated.jar").get().asFile.absolutePath
+	def extractDir = layout.buildDirectory.dir("jar-encryption-temp").get().asFile.absolutePath
+
+	doFirst {
+		println "extracting remapped JAR for string encryption..."
+		ant.unzip(src: jarPath, dest: extractDir, overwrite: true)
+	}
+
+	classpath = buildscript.configurations.classpath + files("$rootDir/buildSrc/build/classes/java/main")
+	mainClass = 'com.quantum.obfuscator.StringEncryptor'
+
+	args = [
+			extractDir,
+			'true'
+	]
+
+	doLast {
+		println "repackaging JAR with encrypted strings..."
+		ant.zip(destfile: jarPath, basedir: extractDir, update: false)
+		ant.delete(dir: extractDir)
+		println "string encryption complete (JAR-based, pre-ProGuard)"
+	}
+}
+
+// stage 1.7: control flow flattening (was dummy class injection - moved to post-proguard)
+tasks.register('flattenControlFlow', JavaExec) {
+	group = 'obfuscation'
+	description = 'flattens control flow into state machines (makes decompiled code unreadable)'
+
+	dependsOn injectDeadCode  // number obfuscation moved to JAR-based stage
+
+	classpath = buildscript.configurations.classpath + files("$rootDir/buildSrc/build/classes/java/main")
+	mainClass = 'com.quantum.obfuscator.ControlFlowFlattener'
+
+	args = [
+			file('build/classes/java/main').absolutePath,
+			'true'  // verbose
+	]
+
+	doLast {
+		println "control flow flattening complete"
+	}
+}
+
+// stage 1.9: control flow flattening (was dummy class injection - moved to post-proguard)
+// NOTE: Dummy classes are now injected AFTER ProGuard to prevent removal
+
+// stage 1.6: fake exception handlers
+// NOTE: Applied AFTER ProGuard to avoid stack calculation conflicts
+// This keeps them OUT of the unobfuscated build
+/*
+tasks.register('injectFakeExceptions', JavaExec) {
+	group = 'obfuscation'
+	description = 'adds fake exception handlers to confuse decompilers'
+
+	dependsOn obfuscateNumbers
+
+	classpath = buildscript.configurations.classpath + files("$rootDir/buildSrc/build/classes/java/main")
+	mainClass = 'com.quantum.obfuscator.FakeExceptionInjector'
+
+	args = [
+		file('build/classes/java/main').absolutePath,
+		'true'  // verbose
+	]
+
+	doLast {
+		println "fake exception injection complete"
+	}
+}
+*/
+
+// stage 1.7: anti-debug protection
+// NOW APPLIED AFTER PROGUARD - only in obfuscated JAR, not in unobf build
+/*
+// first, copy AntiDebug.class into build output
+tasks.register('copyAntiDebugClass', Copy) {
+	group = 'obfuscation'
+
+	def sourceFile = layout.projectDirectory.file("buildSrc/build/classes/java/main/com/quantum/obfuscator/AntiDebug.class").asFile.absolutePath
+	def destDir = layout.buildDirectory.dir("classes/java/main/com/quantum/obfuscator").get().asFile.absolutePath
+
+	from sourceFile
+	into destDir
+
+	dependsOn obfuscateNumbers
+
+	doFirst {
+		// ensure directory exists
+		new File(destDir).mkdirs()
+
+		// ensure buildSrc is compiled
+		if (!new File(sourceFile).exists()) {
+			throw new GradleException("AntiDebug.class not found at: ${sourceFile}")
+		}
+	}
+}
+
+tasks.register('injectAntiDebug', JavaExec) {
+	group = 'obfuscation'
+	description = 'injects anti-debugger detection into entrypoint'
+
+	dependsOn copyAntiDebugClass
+
+	classpath = buildscript.configurations.classpath + files("$rootDir/buildSrc/build/classes/java/main")
+	mainClass = 'com.quantum.obfuscator.AntiDebugInjector'
+
+	args = [
+		file('build/classes/java/main').absolutePath,
+		'true'  // verbose
+	]
+
+	doLast {
+		println "anti-debug protection injected (passive mode)"
+	}
+}
+*/
+
+// make jar depend on anti-debug copy
+/*
+tasks.named('jar') {
+	dependsOn copyAntiDebugClass
+}
+*/
+
+// make remapJar depend on obfuscation stages (NO anti-debug in unobf!)
+tasks.named('remapJar') {
+	dependsOn flattenControlFlow
+
+	// rename output to unobfuscated
+	archiveClassifier = 'unobfuscated'
+}
+
+// ---------- stage 2.5: opaque predicates (simple math only, no method calls) ----------
+tasks.register('preProguardOpaquePredicates', JavaExec) {
+	group = 'obfuscation'
+	description = 'injects opaque predicates on clean bytecode BEFORE proguard'
+
+	dependsOn encryptStringsInJar
+
+	def inputJar = providers.provider { remapJar.archiveFile.get().asFile.absolutePath }
+	def tempJar = providers.provider { remapJar.archiveFile.get().asFile.absolutePath.replace('.jar', '-predicates.jar') }
+
+	classpath = buildscript.configurations.classpath + files("$rootDir/buildSrc/build/classes/java/main")
+	mainClass = 'com.quantum.obfuscator.OpaquePredicateInjector'
+
+	doFirst {
+		args = [
+				inputJar.get(),
+				tempJar.get(),
+				'false'  // verbose
+		]
+	}
+
+	doLast {
+		// replace original with processed
+		ant.move(file: tempJar.get(), tofile: inputJar.get(), overwrite: true)
+		println "opaque predicate injection complete (pre-proguard)"
+	}
+}
+
+// ---------- stage 2.6: number obfuscation moved to post-ProGuard ----------
+// pre-proguard causes stack frame issues when combined with control flow flattening
+// running after proguard gives us clean bytecode to work with
+
+// ---------- stage 3: proguard obfuscation ----------
+tasks.register('proguardObfuscate', JavaExec) {
+	group = 'obfuscation'
+	description = 'runs proguard obfuscation on remapped jar'
+
+	dependsOn preProguardOpaquePredicates
+
+	classpath = configurations.proguard
+	mainClass = 'proguard.ProGuard'
+
+	// compute paths at configuration time to avoid config cache issues
+	def inputJarPath = providers.provider { remapJar.archiveFile.get().asFile.absolutePath }
+	def outputJarPath = providers.provider { layout.buildDirectory.file("libs/${project.archives_base_name}-${project.version}.jar").get().asFile.absolutePath }
+	def tempConfigPath = providers.provider { layout.buildDirectory.file("proguard-runtime.conf").get().asFile.absolutePath }
+	def baseConfigPath = layout.projectDirectory.file("proguard.conf").asFile.absolutePath
+	def projectVersion = project.version as String
+	def dictionaryPath = layout.projectDirectory.file("proguard-dictionary.txt").asFile.absolutePath
+	def mcVersion = project.minecraft_version as String
+	def userHome = System.getProperty('user.home')
+	// Use intermediary-mapped Minecraft jar so ProGuard sees the same class names as runtime
+	def minecraftJarPath = "${userHome}/.gradle/caches/fabric-loom/minecraftMaven/net/minecraft/minecraft-merged-intermediary/${mcVersion}-loom.mappings.1_21_11.layered+hash.2198-v2/minecraft-merged-intermediary-${mcVersion}-loom.mappings.1_21_11.layered+hash.2198-v2.jar"
+
+	inputs.file(inputJarPath)
+	inputs.file(baseConfigPath)
+	outputs.file(outputJarPath)
+
+	doFirst {
+		def inputJar = inputJarPath.get()
+		def outputJar = outputJarPath.get()
+
+		println "running proguard obfuscation..."
+		println "input: ${inputJar}"
+		println "output: ${outputJar}"
+
+		// ensure input jar exists
+		def inputFile = new File(inputJar)
+		if (!inputFile.exists()) {
+			throw new GradleException("input jar not found: ${inputJar}")
+		}
+
+		// find Minecraft library jar for ProGuard
+		def minecraftJar = new File(minecraftJarPath)
+
+		// create modified config with actual paths
+		def config = new File(baseConfigPath).text
+		config = config.replace('build/libs/quantum-unobfuscated.jar', inputJar)
+		config = config.replace('build/libs/quantum-${mod_version}.jar', outputJar)
+		config = config.replace('${mod_version}', projectVersion)
+		config = config.replace('proguard-dictionary.txt', dictionaryPath)
+
+		// add Minecraft library jar if found
+		if (minecraftJar.exists()) {
+			println "adding Minecraft library: ${minecraftJar}"
+			config = config + "\n-libraryjars ${minecraftJar.absolutePath}"
+		}
+
+		def tempConfig = new File(tempConfigPath.get())
+		tempConfig.text = config
+
+		// update args to use temp config
+		args = ["@${tempConfig.absolutePath}"]
+	}
+
+	doLast {
+		println "proguard obfuscation complete: ${outputJarPath.get()}"
+		println "mapping file: build/proguard/mapping.txt (if verbose enabled)"
+	}
+}
+
+// make build depend on proguard
+tasks.named('build') {
+	dependsOn proguardObfuscate
+}
+
+// ---------- stage 3: post-proguard injection (obfuscated builds only!) ----------
+
+// stage 3.0: encrypt strings in obfuscated JAR
+// DISABLED: Moved to PRE-ProGuard so we can filter by package name
+/*
+tasks.register('postProguardStringEncryption', JavaExec) {
+	group = 'obfuscation'
+	description = 'encrypts strings AFTER proguard (obfuscated builds only)'
+
+	dependsOn proguardObfuscate
+
+	def obfJar = layout.buildDirectory.file("libs/quantum-${project.version}.jar").get().asFile.absolutePath
+	def extractDir = layout.buildDirectory.dir("obfuscated-extracted").get().asFile.absolutePath
+
+	doFirst {
+		// extract obfuscated JAR
+		println "extracting obfuscated JAR for string encryption..."
+		ant.unzip(src: obfJar, dest: extractDir, overwrite: true)
+	}
+
+	classpath = buildscript.configurations.classpath + files("$rootDir/buildSrc/build/classes/java/main")
+	mainClass = 'com.quantum.obfuscator.StringEncryptor'
+
+	args = [
+		extractDir,
+		'true'  // verbose
+	]
+
+	doLast {
+		// repackage JAR with encrypted strings
+		println "repackaging JAR with encrypted strings..."
+		ant.zip(destfile: obfJar, basedir: extractDir, update: false)
+
+		// cleanup
+		ant.delete(dir: extractDir)
+		println "string encryption complete (post-proguard)"
+	}
+}
+*/
+
+// stage 3.1: inject fake exceptions into obfuscated JAR
+// NOW ULTRA CONSERVATIVE: only movement/combat/player classes, 3% injection rate
+tasks.register('postProguardFakeExceptions', JavaExec) {
+	group = 'obfuscation'
+	description = 'injects fake exception handlers AFTER proguard (no stack conflicts)'
+
+	dependsOn postProguardStringEncryption
+
+	def obfJar = layout.buildDirectory.file("libs/quantum-${project.version}.jar").get().asFile.absolutePath
+	def extractDir = layout.buildDirectory.dir("obfuscated-extracted").get().asFile.absolutePath
+
+	doFirst {
+		// extract obfuscated JAR
+		println "extracting obfuscated JAR for fake exception injection..."
+		ant.unzip(src: obfJar, dest: extractDir, overwrite: true)
+	}
+
+	classpath = buildscript.configurations.classpath + files("$rootDir/buildSrc/build/classes/java/main")
+	mainClass = 'com.quantum.obfuscator.FakeExceptionInjector'
+
+	args = [
+			extractDir,
+			'true'  // verbose
+	]
+
+	doLast {
+		// repackage JAR
+		println "repackaging JAR with fake exceptions..."
+		ant.zip(destfile: obfJar, basedir: extractDir, update: false)
+
+		// cleanup
+		ant.delete(dir: extractDir)
+		println "fake exception injection complete (post-proguard)"
+	}
+}
+
+// stage 3.2: inject anti-debug into obfuscated JAR
+// DISABLED FOR TESTING
+/*
+tasks.register('postProguardAntiDebug', JavaExec) {
+	group = 'obfuscation'
+	description = 'injects anti-debug AFTER proguard (obfuscated builds only)'
+
+	dependsOn postProguardFakeExceptions
+
+	def obfJar = layout.buildDirectory.file("libs/quantum-${project.version}.jar").get().asFile.absolutePath
+	def extractDir = layout.buildDirectory.dir("obfuscated-extracted").get().asFile.absolutePath
+	def antiDebugClass = layout.projectDirectory.file("buildSrc/build/classes/java/main/com/quantum/obfuscator/AntiDebug.class").asFile.absolutePath
+
+	doFirst {
+		// extract obfuscated JAR
+		println "extracting obfuscated JAR for anti-debug injection..."
+		ant.unzip(src: obfJar, dest: extractDir, overwrite: true)
+
+		// copy AntiDebug.class into extracted JAR
+		ant.mkdir(dir: "${extractDir}/com/quantum/obfuscator")
+		ant.copy(file: antiDebugClass, todir: "${extractDir}/com/quantum/obfuscator")
+	}
+
+	classpath = buildscript.configurations.classpath + files("$rootDir/buildSrc/build/classes/java/main")
+	mainClass = 'com.quantum.obfuscator.AntiDebugInjector'
+
+	args = [
+		extractDir,
+		'true'  // verbose
+	]
+
+	doLast {
+		// repackage JAR
+		println "repackaging JAR with anti-debug..."
+		ant.zip(destfile: obfJar, basedir: extractDir, update: false)
+
+		// cleanup
+		ant.delete(dir: extractDir)
+		println "anti-debug injection complete (post-proguard, passive mode)"
+	}
+}
+*/
+
+// stage 3.3: opaque predicates now run BEFORE proguard (see preProguardOpaquePredicates)
+// post-proguard version disabled - causes stackframe corruption on already-obfuscated bytecode
+/*
+tasks.register('postProguardOpaquePredicates', JavaExec) {
+	group = 'obfuscation'
+	description = 'injects opaque predicates at safe stack points AFTER proguard'
+
+	dependsOn proguardObfuscate
+
+	def obfJar = layout.buildDirectory.file("libs/quantum-${project.version}.jar").get().asFile.absolutePath
+	def tempJar = layout.buildDirectory.file("libs/quantum-${project.version}-temp.jar").get().asFile.absolutePath
+
+	classpath = buildscript.configurations.classpath + files("$rootDir/buildSrc/build/classes/java/main")
+	mainClass = 'com.quantum.obfuscator.OpaquePredicateInjector'
+
+	args = [
+		obfJar,
+		tempJar,
+		'false'  // verbose
+	]
+
+	doLast {
+		// replace original with processed
+		ant.move(file: tempJar, tofile: obfJar, overwrite: true)
+		println "opaque predicate injection complete"
+	}
+}
+*/
+
+// stage 3.4: reflection obfuscation DISABLED
+// fundamentally broken with ProGuard - class names change after obfuscation
+// making reflection lookups fail (base.client.auth.AuthManager -> a)
+/*
+tasks.register('postProguardReflection', JavaExec) {
+	group = 'obfuscation'
+	description = 'replaces method calls with reflection AFTER proguard'
+
+	dependsOn proguardObfuscate
+
+	def obfJar = layout.buildDirectory.file("libs/quantum-${project.version}.jar").get().asFile.absolutePath
+	def tempJar = layout.buildDirectory.file("libs/quantum-${project.version}-temp.jar").get().asFile.absolutePath
+
+	classpath = buildscript.configurations.classpath + files("$rootDir/buildSrc/build/classes/java/main")
+	mainClass = 'com.quantum.obfuscator.ReflectionObfuscator'
+
+	args = [
+		obfJar,
+		tempJar,
+		'false'  // verbose
+	]
+
+	doLast {
+		// replace original with processed
+		ant.move(file: tempJar, tofile: obfJar, overwrite: true)
+		println "reflection obfuscation complete"
+	}
+}
+*/
+
+// stage 3.4: number obfuscation (post-ProGuard for clean bytecode)
+tasks.register('postProguardNumberObfuscation', JavaExec) {
+	group = 'obfuscation'
+	description = 'obfuscates integer constants with math operations AFTER proguard'
+
+	dependsOn proguardObfuscate
+
+	def obfJar = layout.buildDirectory.file("libs/quantum-${project.version}.jar").get().asFile.absolutePath
+	def tempJar = layout.buildDirectory.file("libs/quantum-${project.version}-numbers.jar").get().asFile.absolutePath
+
+	classpath = buildscript.configurations.classpath + files("$rootDir/buildSrc/build/classes/java/main")
+	mainClass = 'com.quantum.obfuscator.NumberObfuscator'
+
+	args = [
+			obfJar,
+			tempJar,
+			'false'  // verbose
+	]
+
+	doLast {
+		ant.move(file: tempJar, tofile: obfJar, overwrite: true)
+		println "number obfuscation complete (post-proguard)"
+	}
+}
+
+// stage 3.5: inject tamper detection into obfuscated JAR
+tasks.register('postProguardTamperDetection', JavaExec) {
+	group = 'obfuscation'
+	description = 'injects tamper detection AFTER proguard'
+
+	dependsOn postProguardNumberObfuscation
+
+	def obfJar = layout.buildDirectory.file("libs/quantum-${project.version}.jar").get().asFile.absolutePath
+	def tempJar = layout.buildDirectory.file("libs/quantum-${project.version}-temp.jar").get().asFile.absolutePath
+
+	classpath = buildscript.configurations.classpath + files("$rootDir/buildSrc/build/classes/java/main")
+	mainClass = 'com.quantum.obfuscator.TamperDetector'
+
+	args = [
+			obfJar,
+			tempJar,
+			'false'  // verbose
+	]
+
+	doLast {
+		// replace original with processed
+		ant.move(file: tempJar, tofile: obfJar, overwrite: true)
+		println "tamper detection injection complete"
+	}
+}
+
+// stage 3.6: inject anti-debug into obfuscated JAR
+tasks.register('postProguardAntiDebug', JavaExec) {
+	group = 'obfuscation'
+	description = 'injects anti-debug AFTER proguard (obfuscated builds only)'
+
+	dependsOn postProguardTamperDetection
+
+	def obfJar = layout.buildDirectory.file("libs/quantum-${project.version}.jar").get().asFile.absolutePath
+	def extractDir = layout.buildDirectory.dir("obfuscated-extracted").get().asFile.absolutePath
+	def antiDebugClass = layout.projectDirectory.file("buildSrc/build/classes/java/main/com/quantum/obfuscator/AntiDebug.class").asFile.absolutePath
+
+	doFirst {
+		// extract obfuscated JAR
+		println "extracting obfuscated JAR for anti-debug injection..."
+		ant.unzip(src: obfJar, dest: extractDir, overwrite: true)
+
+		// copy AntiDebug.class into extracted JAR
+		ant.mkdir(dir: "${extractDir}/com/quantum/obfuscator")
+		ant.copy(file: antiDebugClass, todir: "${extractDir}/com/quantum/obfuscator")
+	}
+
+	classpath = buildscript.configurations.classpath + files("$rootDir/buildSrc/build/classes/java/main")
+	mainClass = 'com.quantum.obfuscator.AntiDebugInjector'
+
+	args = [
+			extractDir,
+			'true'  // verbose
+	]
+
+	doLast {
+		// repackage JAR
+		println "repackaging JAR with anti-debug..."
+		ant.zip(destfile: obfJar, basedir: extractDir, update: false)
+
+		// cleanup
+		ant.delete(dir: extractDir)
+		println "anti-debug injection complete (post-proguard)"
+	}
+}
+
+// stage 3.7: inject 5000 dummy classes into obfuscated JAR
+tasks.register('postProguardDummyClasses', JavaExec) {
+	group = 'obfuscation'
+	description = 'injects 5000 fake classes AFTER proguard (obfuscated builds only)'
+
+	dependsOn postProguardAntiDebug
+
+	def obfJar = layout.buildDirectory.file("libs/quantum-${project.version}.jar").get().asFile.absolutePath
+	def extractDir = layout.buildDirectory.dir("obfuscated-extracted").get().asFile.absolutePath
+
+	doFirst {
+		// extract obfuscated JAR
+		println "extracting obfuscated JAR for dummy class injection..."
+		ant.unzip(src: obfJar, dest: extractDir, overwrite: true)
+	}
+
+	classpath = buildscript.configurations.classpath + files("$rootDir/buildSrc/build/classes/java/main")
+	mainClass = 'com.quantum.obfuscator.DummyClassGenerator'
+
+	args = [
+			extractDir,
+			'5000',  // 5000 dummy classes
+			'false'  // verbose
+	]
+
+	doLast {
+		// repackage JAR with 5000 dummy classes
+		println "repackaging JAR with 5000 dummy classes..."
+		ant.zip(destfile: obfJar, basedir: extractDir, update: false)
+
+		// cleanup
+		ant.delete(dir: extractDir)
+		println "dummy class injection complete (post-proguard): 5000 fakes added"
+	}
+}
+
+// make build depend on post-proguard injections
+tasks.named('build') {
+	dependsOn postProguardDummyClasses
+}
+
+// configure the maven publication
+publishing {
+	publications {
+		create("mavenJava", MavenPublication) {
+			artifactId = project.archives_base_name
+			from components.java
+		}
+	}
+
+	// See https://docs.gradle.org/current/userguide/publishing_maven.html for information on how to set up publishing.
+	repositories {
+		// Add repositories to publish to here.
+		// Notice: This block does NOT have the same function as the block in the top level.
+		// The repositories here will be used for publishing your artifact, not for
+		// retrieving dependencies.
+	}
+}

@@ -1,0 +1,282 @@
+{
+  "dairpods": {
+    "sounds": [
+      "quantum:dairpods"
+    ]
+  },
+  "eairpods": {
+    "sounds": [
+      "quantum:eairpods"
+    ]
+  },
+  "dakrien": {
+    "sounds": [
+      "quantum:dakrien"
+    ]
+  },
+  "eakrien": {
+    "sounds": [
+      "quantum:eakrien"
+    ]
+  },
+  "dalarm": {
+    "sounds": [
+      "quantum:dalarm"
+    ]
+  },
+  "ealarm": {
+    "sounds": [
+      "quantum:ealarm"
+    ]
+  },
+  "daugustus": {
+    "sounds": [
+      "quantum:daugustus"
+    ]
+  },
+  "eaugustus": {
+    "sounds": [
+      "quantum:eaugustus"
+    ]
+  },
+  "dbaloon": {
+    "sounds": [
+      "quantum:dbaloon"
+    ]
+  },
+  "ebaloon": {
+    "sounds": [
+      "quantum:ebaloon"
+    ]
+  },
+  "dbaloonfast": {
+    "sounds": [
+      "quantum:dbaloonfast"
+    ]
+  },
+  "ebaloonfast": {
+    "sounds": [
+      "quantum:ebaloonfast"
+    ]
+  },
+  "dbasic": {
+    "sounds": [
+      "quantum:dbasic"
+    ]
+  },
+  "ebasic": {
+    "sounds": [
+      "quantum:ebasic"
+    ]
+  },
+  "dbreak": {
+    "sounds": [
+      "quantum:dbreak"
+    ]
+  },
+  "ebreak": {
+    "sounds": [
+      "quantum:ebreak"
+    ]
+  },
+  "dbubble": {
+    "sounds": [
+      "quantum:dbubble"
+    ]
+  },
+  "ebubble": {
+    "sounds": [
+      "quantum:ebubble"
+    ]
+  },
+  "ddiscord": {
+    "sounds": [
+      "quantum:ddiscord"
+    ]
+  },
+  "ediscord": {
+    "sounds": [
+      "quantum:ediscord"
+    ]
+  },
+  "dfrontiers": {
+    "sounds": [
+      "quantum:dfrontiers"
+    ]
+  },
+  "efrontiers": {
+    "sounds": [
+      "quantum:efrontiers"
+    ]
+  },
+  "dheavy": {
+    "sounds": [
+      "quantum:dheavy"
+    ]
+  },
+  "eheavy": {
+    "sounds": [
+      "quantum:eheavy"
+    ]
+  },
+  "disable": {
+    "sounds": [
+      "quantum:disable"
+    ]
+  },
+  "enable": {
+    "sounds": [
+      "quantum:enable"
+    ]
+  },
+  "dnursultan": {
+    "sounds": [
+      "quantum:dnursultan"
+    ]
+  },
+  "enursultan": {
+    "sounds": [
+      "quantum:enursultan"
+    ]
+  },
+  "dori": {
+    "sounds": [
+      "quantum:dori"
+    ]
+  },
+  "eori": {
+    "sounds": [
+      "quantum:eori"
+    ]
+  },
+  "dori2": {
+    "sounds": [
+      "quantum:dori2"
+    ]
+  },
+  "eori2": {
+    "sounds": [
+      "quantum:eori2"
+    ]
+  },
+  "dpiano": {
+    "sounds": [
+      "quantum:dpiano"
+    ]
+  },
+  "epiano": {
+    "sounds": [
+      "quantum:epiano"
+    ]
+  },
+  "dsigma": {
+    "sounds": [
+      "quantum:dsigma"
+    ]
+  },
+  "esigma": {
+    "sounds": [
+      "quantum:esigma"
+    ]
+  },
+  "dspeech": {
+    "sounds": [
+      "quantum:dspeech"
+    ]
+  },
+  "espeech": {
+    "sounds": [
+      "quantum:espeech"
+    ]
+  },
+  "dspeechecho": {
+    "sounds": [
+      "quantum:dspeechecho"
+    ]
+  },
+  "espeechecho": {
+    "sounds": [
+      "quantum:espeechecho"
+    ]
+  },
+  "dsweep": {
+    "sounds": [
+      "quantum:dsweep"
+    ]
+  },
+  "esweep": {
+    "sounds": [
+      "quantum:esweep"
+    ]
+  },
+  "dtone": {
+    "sounds": [
+      "quantum:dtone"
+    ]
+  },
+  "etone": {
+    "sounds": [
+      "quantum:etone"
+    ]
+  },
+  "dvega": {
+    "sounds": [
+      "quantum:dvega"
+    ]
+  },
+  "evega": {
+    "sounds": [
+      "quantum:evega"
+    ]
+  },
+  "dvl": {
+    "sounds": [
+      "quantum:dvl"
+    ]
+  },
+  "evl": {
+    "sounds": [
+      "quantum:evl"
+    ]
+  },
+  "dwood": {
+    "sounds": [
+      "quantum:dwood"
+    ]
+  },
+  "ewood": {
+    "sounds": [
+      "quantum:ewood"
+    ]
+  },
+  "dmouse": {
+    "sounds": [
+      "quantum:dmouse"
+    ]
+  },
+  "emouse": {
+    "sounds": [
+      "quantum:emouse"
+    ]
+  },
+  "dexecution": {
+    "sounds": [
+      "quantum:dexecution"
+    ]
+  },
+  "eexecution": {
+    "sounds": [
+      "quantum:eexecution"
+    ]
+  },
+  "skeet": {
+    "sounds": [
+      "quantum:skeet"
+    ]
+  },
+  "neverlose": {
+    "sounds": [
+      "quantum:neverlose"
+    ]
+  }
+}

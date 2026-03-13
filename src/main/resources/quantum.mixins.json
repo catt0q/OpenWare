@@ -1,0 +1,47 @@
+{
+	"required": true,
+	"priority": 900,
+	"package": "base.mixin.client",
+	"compatibilityLevel": "JAVA_21",
+	"mixins": [
+		"accessors.ServerboundMovePlayerPacketAccessor",
+		"accessors.ServerboundInteractPacketAccesor",
+		"accessors.GuiInvoker",
+		"accessors.LevelChunkPacketDataAccessor",
+		"accessors.FontManagerAccessor",
+		"accessors.LivingEntityAccessor",
+		"ServerboundMovePlayerPacketMixin",
+		"ClientPacketListenerMixin",
+		"ConnectionMixin",
+		"EntityMixin",
+		"GameRendererMixin",
+		"GuiMixin",
+		"KeyboardHandlerMixin",
+		"KeyboardInputMixin",
+		"LivingEntityMixin",
+		"LivingEntityRendererMixin",
+		"LocalPlayerMixin",
+		"MainMixin",
+		"MinecraftMixin",
+		"WebBlockMixin",
+		"TickDynamicMixin",
+		"MixinMultiPlayerGameMode",
+		"ScreenEffectRendererMixin",
+		"FogRendererMixin",
+		"LightTextureMixin",
+		"ItemInHandRendererMixin",
+		"LevelRendererMixin",
+		"PlayerRendererMixin",
+		"CameraMixin",
+		"PlayerMixin",
+		"BlockStateBaseMixin",
+		"ScreenMixin",
+		"TitleScreenMixin"
+	],
+	"injectors": {
+		"defaultRequire": 1
+	},
+	"overwrites": {
+		"requireAnnotations": true
+	}
+}

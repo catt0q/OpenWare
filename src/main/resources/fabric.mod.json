@@ -1,0 +1,42 @@
+{
+	"schemaVersion": 1,
+	"id": "quantum",
+	"version": "${version}",
+	"name": "quantum",
+	"description": "Breaking through the quantum firewall",
+	"authors": [
+		"catt0q",
+		"Zqcox"
+	],
+	"contact": {
+		"homepage": "https://fabricmc.net/",
+		"sources": "https://github.com/FabricMC/fabric-example-mod"
+	},
+	"license": "CC0-1.0",
+	"accessWidener": "quantum.accesswidener",
+	"icon": "assets/quantum/icon.png",
+	"environment": "*",
+	"entrypoints": {
+		"main": [
+			"base.CattoWare"
+		],
+		"fabric-datagen": [
+			"base.CattoWareDataGenerator"
+		],
+		"client": [
+			"base.client.CattoWareClient"
+		]
+	},
+	"mixins": [
+		"quantum.mixins.json"
+	],
+	"depends": {
+		"fabricloader": ">=0.16.14",
+		"minecraft": "~1.21.11",
+		"java": ">=21",
+		"fabric-api": "*"
+	},
+	"suggests": {
+		"another-mod": "*"
+	}
+}
