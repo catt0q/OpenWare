@@ -12,14 +12,14 @@ public class ParallaxBackground {
 
     private static final Identifier WHATSAPP_CAMEL = Identifier.fromNamespaceAndPath("quantum",
             "textures/gui/pizdec.png");
-    private static final float WHATSAPP_CAMEL_ASPECT = 628.0f / 403.0f;
+    private static final float WHATSAPP_CAMEL_ASPECT = 1280.0f / 720.0f;
 
     private static final Identifier EPSTEIN_ISLAND = Identifier.fromNamespaceAndPath("quantum",
             "textures/gui/epstein_island.png");
     private static final float EPSTEIN_ISLAND_ASPECT = 5184.0f / 3456.0f;
 
-    private static final float PARALLAX_SCALE = 1.2f;
-    private static final float PARALLAX_STRENGTH = 0.5f;
+    private static final float PARALLAX_SCALE = 1.15f;
+    private static final float PARALLAX_STRENGTH = 0.4f;
 
     /**
      * renders the parallax background
