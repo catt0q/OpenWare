@@ -17,7 +17,6 @@ public class SliderGuiElement extends GuiElement {
 
     NumberSetting setting;
     public boolean dragging = false;
-
     public SliderGuiElement(NumberSetting setting) {
         this.setting = setting;
         height = 16;
@@ -46,10 +45,12 @@ public class SliderGuiElement extends GuiElement {
         // background
         GuiHelper.rectFilledRounded(graphics, x + 2, y + 1, width - 4, height - 2, GuiHelper.BORDER_RADIUS,
                 GuiHelper.applyOpacity(bgColor2, alpha * 255f));
-        // filled portion
+        // filled portion with accent
         float fillWidth = Math.max((width - 4) * lerp, GuiHelper.BORDER_RADIUS * 2);
+        int base = GuiHelper.applyOpacity(bgColor2, alpha * 255f);
+        int accent = GuiHelper.applyOpacity(GuiHelper.getGlobalColor(colorIndex), alpha * 255f);
         GuiHelper.rectFilledRounded(graphics, x + 2, y + 1, fillWidth, height - 2, GuiHelper.BORDER_RADIUS,
-                GuiHelper.applyOpacity(0xFF3A3A3A, alpha * 255f));
+                GuiHelper.interpolateColor(base, accent, lerp));
         renderScrollingString(graphics,
                 setting.getName() + ": "
                         + ((setting.getValue() + "").endsWith(".0") ? (int) setting.getValue() : setting.getValue())

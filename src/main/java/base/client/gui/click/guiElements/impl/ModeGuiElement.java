@@ -49,8 +49,10 @@ public class ModeGuiElement extends GuiElement {
                 AnimMode mode = modes.get(i);
                 String s = mode.mode;
                 mode.animation = GuiHelper.lerp(mode.animation, setting.currentMode.equalsIgnoreCase(s) ? 1 : 0, 0.15f);
+                int base = bgColor2;
+                int accent = GuiHelper.getGlobalColor(colorIndex); // same as booleans/sliders
                 GuiHelper.rectFilledRounded(graphics, x + 2, y + yOffset + 1, width - 4, 14, GuiHelper.BORDER_RADIUS,
-                        GuiHelper.applyOpacity(GuiHelper.interpolateColor(bgColor2, 0xFF3A3A3A, mode.animation),
+                        GuiHelper.applyOpacity(GuiHelper.interpolateColor(base, accent, mode.animation),
                                 alpha * lerp * 255f));
                 renderScrollingString(graphics, s, FontHelper.getFont(), (int) x + 6, (int) (y + yOffset), 0,
                         GuiHelper.applyOpacity(-1, alpha * lerp * 255f));

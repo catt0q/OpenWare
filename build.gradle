@@ -594,10 +594,6 @@ tasks.register('proguardObfuscate', JavaExec) {
 }
 
 // make build depend on proguard
-tasks.named('build') {
-	dependsOn proguardObfuscate
-}
-
 // ---------- stage 3: post-proguard injection (obfuscated builds only!) ----------
 
 // stage 3.0: encrypt strings in obfuscated JAR
@@ -904,9 +900,6 @@ tasks.register('postProguardDummyClasses', JavaExec) {
 }
 
 // make build depend on post-proguard injections
-tasks.named('build') {
-	dependsOn postProguardDummyClasses
-}
 
 // configure the maven publication
 publishing {

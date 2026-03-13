@@ -140,8 +140,8 @@ public class Flight extends Module {
         GMode = new ModeSetting("Grim Mode", "Glide", () -> Mode.getCurrentMode().equals("Grim"), "Glide");
         // =====================================================================================================
 
-        MMode = new ModeSetting("Matrix Mode", "Vanilla", () -> Mode.getCurrentMode().equals("Matrix"), "Vanilla",
-                "Vanilla2", "Jump7.16.0", "OldJump", "DamageFloat", "Timerless7.16.2", "BBGS", "Duel", "Lag");
+        MMode = new ModeSetting("Matrix Mode", "Packet", () -> Mode.getCurrentMode().equals("Matrix"), "Packet",
+                "FlagMachine", "DamageFloat", "Lag");
         AutoDamage = new BooleanSetting("NoWorkDmg", true,
                 () -> (MMode.isVisible() && MMode.getCurrentMode().equals("DamageFloat")));
 
@@ -198,7 +198,7 @@ public class Flight extends Module {
         // Packet rate limiter settings
         PacketLimiter = new BooleanSetting("PacketLimiter", true,
                 () -> MMode.isVisible()
-                        && (MMode.getCurrentMode().equals("Vanilla") || MMode.getCurrentMode().equals("Vanilla2")));
+                        && (MMode.getCurrentMode().equals("Packet") || MMode.getCurrentMode().equals("FlagMachine")));
         PacketMax = new NumberSetting("PacketMax", 120, 1, 800, 1,
                 () -> PacketLimiter.isVisible() && PacketLimiter.isEnabled());
         PacketTicks = new NumberSetting("PacketTicks", 15, 1, 100, 1,
@@ -406,6 +406,7 @@ public class Flight extends Module {
     }
 
     public void onEnable() {
+        mc.player.setSprinting(false);
         PacketHelper.Values pc = Client.instance.packet;
         resetRateLimiter(); // Reset packet rate limiter
         shouddelay = false;
@@ -435,6 +436,7 @@ public class Flight extends Module {
         lasttpposZ = 0;
         startposY = mc.player.getY();
         groundstate = 0;
+        mc.player.setSprinting(false);
         switch (Mode.getCurrentMode()) {
 
             case ("Matrix"):
@@ -482,10 +484,10 @@ public class Flight extends Module {
                     }
                     latestDamageDelayTicks = 7;
                 }
-            } else if (MMode.getCurrentMode().equals("Vanilla")) {
+            } else if (MMode.getCurrentMode().equals("Packet")) {
                 fixedyaw = pc.LastYaw;
                 fixedpitch = pc.LastPitch;
-            } else if (MMode.getCurrentMode().equals("Vanilla2")) {
+            } else if (MMode.getCurrentMode().equals("FlagMachine")) {
                 fixedyaw = pc.LastYaw;
                 fixedpitch = pc.LastPitch;
                 pc.sendPacket(new ServerboundMovePlayerPacket.StatusOnly(false, false), 10, true);
@@ -536,7 +538,7 @@ public class Flight extends Module {
 
                     break;
             }
-            if (MMode.isVisible() && MMode.getCurrentMode().equals("Vanilla")) {
+            if (MMode.isVisible() && MMode.getCurrentMode().equals("Packet")) {
                 mc.player.setPos(pc.LastPosX, pc.LastPosY, pc.LastPosZ);
             }
             if (MMode.isVisible() && MMode.getCurrentMode().equals("Vanilla2")) {
@@ -779,7 +781,7 @@ public class Flight extends Module {
                         MatrixTimerlessFlight.onEventOnMovePost(e, xt, zt);
                         break;
 
-                    case ("Vanilla"):
+                    case ("Packet"):
 
                         if (MoveUtil.motYstate() == 0) {
                             if (MoveUtil.getdir() != -1) {
@@ -887,7 +889,7 @@ public class Flight extends Module {
                             flydelay--;
                         }
                         break;
-                    case ("Vanilla2"):
+                    case ("FlagMachine"):
 
                         if (MoveUtil.motYstate() == 0) {
                             if (MoveUtil.getdir() != -1) {
@@ -1520,7 +1522,7 @@ public class Flight extends Module {
                 break;
             case ("Matrix"):
                 switch (MMode.getCurrentMode()) {
-                    case ("Jump7.16.0"), ("OldJump"), ("DamageFloat"), ("Duel"), ("Vanilla"), ("Vanilla2"),
+                    case ("Jump7.16.0"), ("OldJump"), ("DamageFloat"), ("Duel"), ("Packet"), ("FlagMachine"),
                             ("Timerless7.16.2"):
                         if ((e.getPacket() instanceof ClientboundExplodePacket)
                                 || ((e.getPacket() instanceof ClientboundSetEntityMotionPacket)
@@ -1594,7 +1596,7 @@ public class Flight extends Module {
             case ("Matrix"):
                 switch (MMode.getCurrentMode()) {
 
-                    case ("Vanilla"), ("Vanilla2"):
+                    case ("Matrix"), ("FlagMachine"):
 
                         if (packetp instanceof ServerboundMovePlayerPacket) {
                             ServerboundMovePlayerPacket c03 = (ServerboundMovePlayerPacket) packetp;
