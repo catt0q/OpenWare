@@ -66,7 +66,7 @@ public static float lastyaw=0,lastpitch=0;
         rad = new NumberSetting("Radius", 4, 1, 6, 0.5F, () -> true);
         brde = new NumberSetting("Delay", 1000, 0, 5000, 1F, () -> true);
 
-        addSettings(mode, bypass, rad, brde);
+        addSettings(mode, bypass);
     }
     @Override
     public void onDisable() {
@@ -105,7 +105,7 @@ if(findblock) {
     BlockState bss = mc.level.getBlockState(lastbp);
       prevblock = bss.getBlock();
      if (!goodBlock(prevblock)) {
-         long maxWait = bypass.getCurrentMode().equals("Matrix1") ? 50L : 0L;
+         long maxWait = bypass.getCurrentMode().equals("Matrix1") ? 5L : 0L;
          if((!bypass.getCurrentMode().equals("Matrix1")) || waitforbrek.hasTimeElapsed(maxWait,false)) {
              MoveUtil.isFreezing=false;  resetBlockData();
          }
@@ -324,7 +324,7 @@ ChatHelper.addChatMessage("hi");
                 if(MoveUtil.isFreezing){
                     MoveUtil.stop3();
  if(!goodBlock(prevblock)){
-    if(waitforbrek.hasTimeElapsed(50L,false)) {
+    if(waitforbrek.hasTimeElapsed(5L,false)) {
         MoveUtil.isFreezing = false;
         MoveUtil.setmotXYZ(savedMot.x, savedMot.y, savedMot.z); MoveUtil.limit2speed(0.2);
     }
