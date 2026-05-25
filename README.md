@@ -12,3 +12,5 @@ ultra mega sosiska java paster $$$
 SRC IS BUILT ON GRADLE 9.3.0 AND JDK 21!!!
 
 Fabric 1.21.11
+
+This client is based on MATRAS AC BIPASSING $$$ MATRIX BIPASS
